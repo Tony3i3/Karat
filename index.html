@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Karat</title>
+<meta name="description" content="Live gold and silver spot prices, value per gram by purity, and what your budget buys including shop charges.">
+<meta name="theme-color" content="#5C1424" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#3D0C17" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Karat">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Jost:wght@400;500;600&display=swap">
+<style>
+:root {
+  --paper: #FFFFFF;
+  --ink: #1F1214;
+  --ink-soft: #6E5C60;
+  --line: #EADFE1;
+  --field: #FAF6F6;
+  --accent: #7A1C2E;
+  --on-accent: #FFFFFF;
+  --band: #5C1424;
+  --band-glow: #74202F;
+  --on-band: #F8EDEE;
+  --on-band-soft: #D9B6BC;
+  --rise: #F4D27C;
+  --fall: #F4A6B1;
+  --stamp-gold: #A87A1E;
+  --stamp-silver: #8A9097;
+  --grad-gold: linear-gradient(180deg, #FFF0B8 0%, #F2C95C 38%, #C99526 62%, #E9C064 82%, #FBE39A 100%);
+  --grad-silver: linear-gradient(180deg, #FFFFFF 0%, #E3E6EA 38%, #A9AFB6 62%, #CFD3D8 82%, #F4F5F7 100%);
+  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --sans: 'Jost', -apple-system, system-ui, 'Segoe UI', sans-serif;
+  --gutter: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #140A0C;
+    --ink: #F4EAEB;
+    --ink-soft: #BBA4A8;
+    --line: #3A2327;
+    --field: #1F1114;
+    --accent: #E6BD5E;
+    --on-accent: #1F1214;
+    --band: #3D0C17;
+    --band-glow: #521424;
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 16px/1.45 var(--sans);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+button, input, summary { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button, summary, label, th, .tabs, .units, .seg, .stamp, .caption, .status, .hint, .note {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+button { cursor: pointer; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.band :focus-visible { outline-color: var(--rise); }
+.num, .price, .stamp-mark { font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum" 1, "tnum" 1; }
+
+.wrap {
+  width: 100%;
+  max-width: calc(520px + 2 * var(--gutter));
+  margin: 0 auto;
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+
+/* ---------- Price band ---------- */
+.band {
+  background: radial-gradient(120% 85% at 50% 0%, var(--band-glow) 0%, var(--band) 62%);
+  color: var(--on-band);
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid rgba(168, 122, 30, 0.55);
+}
+.tabs { display: flex; padding-top: 6px; border-bottom: 1px solid rgba(217, 182, 188, 0.18); }
+.tab {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--on-band-soft);
+  font: 500 14px/1 var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 14px 0 12px;
+  min-height: 44px;
+  transition: color .2s, border-color .2s;
+}
+.tab[aria-selected="true"] { color: var(--on-band); border-bottom-color: var(--rise); }
+
+.carousel {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.carousel::-webkit-scrollbar { display: none; }
+.panel {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  padding: 20px 0 4px;
+  text-align: center;
+}
+.caption { margin: 0; font: 500 14px/1.3 var(--sans); color: var(--on-band-soft); letter-spacing: 0.02em; }
+.price {
+  margin: 6px 0 4px;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-variation-settings: "opsz" 40;
+  font-size: clamp(44px, 14vw, 62px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  background-image: var(--grad-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  padding: 0 2px 2px;
+}
+.price.long { font-size: clamp(38px, 11.5vw, 54px); }
+.price.xlong { font-size: clamp(32px, 9.5vw, 46px); }
+.panel[data-metal="silver"] .price { background-image: var(--grad-silver); }
+.price.flash { animation: flash .9s ease-out; }
+@keyframes flash {
+  0% { filter: brightness(1.5) saturate(1.15); }
+  100% { filter: none; }
+}
+.delta { margin: 0; min-height: 21px; font: 500 14px/1.5 var(--sans); color: var(--on-band-soft); }
+.delta .up { color: var(--rise); }
+.delta .down { color: var(--fall); }
+
+.units { display: flex; justify-content: center; margin-top: 14px; }
+.pill {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid rgba(217, 182, 188, 0.35);
+  border-radius: 999px;
+}
+.pill button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: none;
+  color: var(--on-band-soft);
+  font: 500 15px/1 var(--sans);
+  min-width: 56px;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  transition: background-color .2s, color .2s;
+}
+.pill button[aria-pressed="true"] { background: var(--on-band); color: var(--band); }
+
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  font: 500 14px/1.3 var(--sans);
+}
+.state { display: inline-flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--on-band-soft); flex: none; }
+.status[data-state="live"] .dot { background: var(--rise); box-shadow: 0 0 0 3px rgba(244, 210, 124, 0.22); }
+.status[data-state="offline"] .dot { background: var(--fall); }
+.status[data-state="manual"] .dot { background: var(--on-band); }
+.status[data-state="connecting"] .dot { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.next {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: 0;
+  color: var(--on-band-soft);
+  font: 500 14px/1.3 var(--sans);
+  padding: 10px 0 10px 12px;
+  margin: -10px 0;
+  text-decoration: underline dotted rgba(217, 182, 188, 0.6);
+  text-underline-offset: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.next:disabled { text-decoration: none; cursor: default; }
+.updated { margin: 6px 0 0; padding-bottom: 16px; font: 400 13px/1.4 var(--sans); color: var(--on-band-soft); font-variant-numeric: tabular-nums; }
+.error {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(244, 166, 177, 0.45);
+  background: rgba(244, 166, 177, 0.12);
+  border-radius: 10px;
+  font: 400 14px/1.45 var(--sans);
+  color: var(--on-band);
+}
+.error[hidden] { display: none; }
+
+/* ---------- Content ---------- */
+main.wrap { padding-top: 18px; padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+h2 {
+  margin: 0 0 4px;
+  font: 600 20px/1.25 var(--serif);
+  font-variation-settings: "opsz" 36;
+  color: var(--ink);
+}
+h2 small { font: 400 14px var(--sans); color: var(--ink-soft); margin-left: 4px; }
+
+.seg {
+  display: flex;
+  padding: 3px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.seg button {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: 500 15px/1.1 var(--sans);
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 9px;
+  white-space: nowrap;
+  transition: background-color .2s, color .2s;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.seg.small button { font-size: 14px; min-height: 38px; padding: 0 8px; }
+
+.label { display: block; margin: 14px 0 6px; font: 500 14px/1.3 var(--sans); color: var(--ink-soft); }
+.field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 52px;
+  padding: 0 14px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: text;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.field input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 12px 0;
+  font: 500 18px/1.2 var(--sans);
+  color: var(--ink);
+  font-variant-numeric: lining-nums tabular-nums;
+  outline: none;
+}
+.field input::placeholder { color: var(--ink-soft); opacity: .6; }
+.field.big { min-height: 60px; }
+.field.big input { font: 500 30px/1.1 var(--serif); font-variation-settings: "opsz" 48; }
+.affix { color: var(--ink-soft); font: 500 18px/1 var(--sans); flex: none; }
+.field.big .affix { font: 500 26px/1 var(--serif); }
+.affix[hidden] { display: none; }
+
+.hint { margin: 2px 0 0; font: 400 14px/1.45 var(--sans); color: var(--ink-soft); }
+.charge { margin-top: 14px; }
+.charge .label { margin-top: 0; }
+.charge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.charge-row .field { flex: 1 1 120px; }
+.charge-row .seg { flex: 1 1 190px; }
+
+/* ---------- Purity table ---------- */
+.table-card { padding-bottom: 6px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th {
+  padding: 0 0 8px;
+  font: 500 13px/1.25 var(--sans);
+  color: var(--ink-soft);
+  text-align: right;
+  vertical-align: bottom;
+}
+th:first-child { text-align: left; }
+td { padding: 12px 0; border-top: 1px solid var(--line); text-align: right; vertical-align: middle; }
+td:first-child { text-align: left; width: 1%; padding-right: 12px; }
+td:nth-child(2) { padding-right: 4px; }
+.num { font: 600 19px/1.2 var(--serif); font-variation-settings: "opsz" 36; color: var(--ink); white-space: nowrap; }
+.sub { display: block; margin-top: 3px; font: 400 12.5px/1.25 var(--sans); color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.stamp {
+  --stamp: var(--stamp-gold);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 66px;
+  padding: 7px 8px 6px;
+  border: 2px solid var(--stamp);
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--stamp);
+  line-height: 1;
+}
+.stamp.silver { --stamp: var(--stamp-silver); }
+.stamp-mark { font: 600 20px/1 var(--serif); font-variation-settings: "opsz" 36; color: var(--ink); }
+.stamp-fine { margin-top: 3px; font: 500 10.5px/1 var(--sans); letter-spacing: 0.08em; color: var(--ink-soft); text-transform: uppercase; }
+
+.note { margin: 6px 0 10px; font: 400 13.5px/1.45 var(--sans); color: var(--ink-soft); }
+
+/* ---------- Manual price ---------- */
+details.card { padding: 0; }
+summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  min-height: 52px;
+  font: 500 15px/1.3 var(--sans);
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: 16px;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--ink-soft);
+  border-bottom: 2px solid var(--ink-soft);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform .2s;
+  flex: none;
+}
+details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
+.manual-body { padding: 0 16px 16px; }
+.manual-body .label { margin-top: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1 1 140px;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 500 15px/1 var(--sans);
+}
+.btn.ghost { background: none; color: var(--accent); }
+.btn[hidden] { display: none; }
+.form-msg { margin: 8px 0 0; font: 400 14px/1.4 var(--sans); color: var(--ink-soft); min-height: 0; }
+.form-msg:empty { display: none; }
+
+.foot { margin: 8px 0 0; text-align: center; font: 400 12.5px/1.5 var(--sans); color: var(--ink-soft); }
+.foot a { color: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <div class="tabs" role="tablist" aria-label="Metal">
+      <button class="tab" role="tab" id="tab-gold" data-metal="gold" aria-controls="panel-gold" aria-selected="true">Gold</button>
+      <button class="tab" role="tab" id="tab-silver" data-metal="silver" aria-controls="panel-silver" aria-selected="false" tabindex="-1">Silver</button>
+    </div>
+
+    <div class="carousel" id="carousel">
+      <section class="panel" id="panel-gold" data-metal="gold" role="tabpanel" aria-labelledby="tab-gold">
+        <p class="caption">Gold spot, USD per ounce</p>
+        <div class="price" aria-live="off">&mdash;</div>
+        <p class="delta"></p>
+      </section>
+      <section class="panel" id="panel-silver" data-metal="silver" role="tabpanel" aria-labelledby="tab-silver">
+        <p class="caption">Silver spot, USD per ounce</p>
+        <div class="price" aria-live="off">&mdash;</div>
+        <p class="delta"></p>
+      </section>
+    </div>
+
+    <div class="units">
+      <div class="pill" role="group" aria-label="Price unit" id="units">
+        <button type="button" data-unit="oz" aria-pressed="true">oz</button>
+        <button type="button" data-unit="g" aria-pressed="false">g</button>
+        <button type="button" data-unit="kg" aria-pressed="false">kg</button>
+      </div>
+    </div>
+
+    <div class="status" id="status" data-state="connecting">
+      <span class="state"><span class="dot" aria-hidden="true"></span><span id="state-text">Connecting</span></span>
+      <button type="button" class="next" id="next" aria-label="Update now">Updating&hellip;</button>
+    </div>
+    <p class="updated" id="updated">Waiting for the price feed</p>
+    <p class="error" id="error" role="status" hidden></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card" aria-label="Calculator">
+    <div class="seg" role="group" aria-label="Calculate by" id="mode">
+      <button type="button" data-mode="budget" aria-pressed="true">Budget</button>
+      <button type="button" data-mode="weight" aria-pressed="false">Weight</button>
+    </div>
+    <label class="label" for="amount" id="amount-label">Budget in USD</label>
+    <div class="field big" data-focus="amount">
+      <span class="affix" id="amount-pre" aria-hidden="true">$</span>
+      <input id="amount" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+      <span class="affix" id="amount-suf" aria-hidden="true" hidden>g</span>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="charges-title">
+    <h2 id="charges-title">Shop charges <small id="charges-metal">optional, gold</small></h2>
+    <p class="hint" id="charges-hint"></p>
+
+    <div class="charge">
+      <label class="label" for="craft">Craftsmanship (masna3iye)</label>
+      <div class="charge-row">
+        <div class="field" data-focus="craft">
+          <span class="affix" id="craft-pre" aria-hidden="true">$</span>
+          <input id="craft" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="0" enterkeyhint="done">
+          <span class="affix" id="craft-suf" aria-hidden="true">/g</span>
+        </div>
+        <div class="seg small" role="group" aria-label="Craftsmanship charged" data-charge="craft">
+          <button type="button" data-cmode="g" aria-pressed="true">per gram</button>
+          <button type="button" data-cmode="pct" aria-pressed="false">% of value</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="charge">
+      <label class="label" for="profit">Seller&rsquo;s profit</label>
+      <div class="charge-row">
+        <div class="field" data-focus="profit">
+          <span class="affix" id="profit-pre" aria-hidden="true">$</span>
+          <input id="profit" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="0" enterkeyhint="done">
+          <span class="affix" id="profit-suf" aria-hidden="true">/g</span>
+        </div>
+        <div class="seg small" role="group" aria-label="Profit charged" data-charge="profit">
+          <button type="button" data-cmode="g" aria-pressed="true">per gram</button>
+          <button type="button" data-cmode="pct" aria-pressed="false">% of value</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card table-card" aria-labelledby="table-title">
+    <h2 id="table-title">Gold by purity</h2>
+    <table>
+      <thead>
+        <tr><th scope="col">Purity</th><th scope="col" id="col-gram">Per gram</th><th scope="col" id="col-calc">$1,000 buys</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="note" id="note"></p>
+  </section>
+
+  <details class="card" id="manual">
+    <summary id="manual-summary">Set the gold spot price yourself</summary>
+    <div class="manual-body">
+      <label class="label" for="manual-input" id="manual-label">Gold spot in USD per ounce</label>
+      <div class="field" data-focus="manual-input">
+        <span class="affix" aria-hidden="true">$</span>
+        <input id="manual-input" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+      </div>
+      <p class="form-msg" id="manual-msg" role="status"></p>
+      <div class="actions">
+        <button type="button" class="btn" id="manual-use">Use this price</button>
+        <button type="button" class="btn ghost" id="manual-back" hidden>Back to live price</button>
+      </div>
+    </div>
+  </details>
+
+  <p class="foot">Spot prices from <a href="https://gold-api.com" rel="noopener">gold-api.com</a>. For reference only.</p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var OZ_G = 31.1035;
+  var API = 'https://api.gold-api.com/price/';
+  var REFRESH_MS = 30000;
+  var TIMEOUT_MS = 10000;
+  var ORDER = ['gold', 'silver'];
+  var METALS = {
+    gold: {
+      name: 'Gold', symbol: 'XAU',
+      rows: [['24K', '999', 1], ['22K', '916', 22 / 24], ['21K', '875', 21 / 24], ['18K', '750', 18 / 24], ['14K', '585', 14 / 24]]
+    },
+    silver: {
+      name: 'Silver', symbol: 'XAG',
+      rows: [['999', 'Fine', 1], ['925', 'Sterling', 0.925], ['900', 'Coin', 0.9], ['800', 'Standard', 0.8]]
+    }
+  };
+  var UNITS = {
+    oz: { word: 'ounce', perOz: 1 },
+    g: { word: 'gram', perOz: 1 / OZ_G },
+    kg: { word: 'kilogram', perOz: 1000 / OZ_G }
+  };
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // ---------- Storage (every call guarded: private mode, quota, disabled storage) ----------
+  var store = {
+    get: function (key, fallback) {
+      try {
+        var raw = window.localStorage.getItem('karat.' + key);
+        return raw == null ? fallback : JSON.parse(raw);
+      } catch (e) { return fallback; }
+    },
+    set: function (key, value) {
+      try { window.localStorage.setItem('karat.' + key, JSON.stringify(value)); } catch (e) { /* ignore */ }
+    }
+  };
+
+  function isPrice(v) { return typeof v === 'number' && isFinite(v) && v > 0; }
+  function oneOf(v, list, fallback) { return list.indexOf(v) >= 0 ? v : fallback; }
+  function amountOr(v, fallback) { return v === null ? null : (typeof v === 'number' && isFinite(v) && v >= 0 ? v : fallback); }
+
+  function loadPrice(metal) {
+    var saved = store.get('price.' + metal, null);
+    var m = {
+      price: null, updatedAt: null, manual: false, lastLive: null,
+      live: false, error: null, httpStatus: null, sessionStart: null, shown: null
+    };
+    if (saved && typeof saved === 'object') {
+      if (isPrice(saved.price)) {
+        m.price = saved.price;
+        m.updatedAt = saved.updatedAt || null;
+        m.manual = saved.manual === true;
+      }
+      if (saved.lastLive && isPrice(saved.lastLive.price)) {
+        m.lastLive = { price: saved.lastLive.price, updatedAt: saved.lastLive.updatedAt || null };
+      }
+    }
+    return m;
+  }
+  function savePrice(metal) {
+    var m = S.m[metal];
+    store.set('price.' + metal, { price: m.price, updatedAt: m.updatedAt, manual: m.manual, lastLive: m.lastLive });
+  }
+  function loadCharges() {
+    var saved = store.get('charges', null) || {};
+    var out = {};
+    ORDER.forEach(function (metal) {
+      var c = saved[metal] || {};
+      out[metal] = {
+        craft: amountOr(c.craft, null),
+        craftMode: oneOf(c.craftMode, ['g', 'pct'], 'g'),
+        profit: amountOr(c.profit, null),
+        profitMode: oneOf(c.profitMode, ['g', 'pct'], 'g')
+      };
+    });
+    return out;
+  }
+
+  var S = {
+    metal: oneOf(store.get('metal'), ORDER, 'gold'),
+    unit: oneOf(store.get('unit'), Object.keys(UNITS), 'oz'),
+    mode: oneOf(store.get('mode'), ['budget', 'weight'], 'budget'),
+    budget: amountOr(store.get('budget', 1000), 1000),
+    weight: amountOr(store.get('weight', 5), 5),
+    charges: loadCharges(),
+    m: { gold: loadPrice('gold'), silver: loadPrice('silver') }
+  };
+
+  // ---------- Formatting ----------
+  function nf(min, max) { return new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: max }); }
+  var F2 = nf(2, 2), F0 = nf(0, 0), FW = nf(0, 3);
+  var DATE = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+  function usd(v) { return '$' + F2.format(v); }
+  function usdBudget(v) { return '$' + (Math.round(v * 100) % 100 === 0 ? F0 : F2).format(v); }
+  function grams(v) { return F2.format(v) + ' g'; }
+  function when(iso) {
+    var d = iso ? new Date(iso) : null;
+    return d && !isNaN(d.getTime()) ? DATE.format(d) : null;
+  }
+  function inUnit(perOz) { return perOz * UNITS[S.unit].perOz; }
+
+  // Accepts "1000", "1,000", "1 000", "4196.6", "4196,6" (comma decimal keypads).
+  function parseAmount(text) {
+    var s = String(text || '').replace(/[\s$ ]/g, '');
+    if (!s) return null;
+    if (s.indexOf(',') >= 0 && s.indexOf('.') >= 0) s = s.replace(/,/g, '');
+    else if (/^[1-9]\d{0,2}(,\d{3})+$/.test(s)) s = s.replace(/,/g, '');
+    else s = s.replace(',', '.');
+    if (!/^(\d+\.?\d*|\.\d+)$/.test(s)) return NaN;
+    return parseFloat(s);
+  }
+
+  // ---------- Math ----------
+  function charges() {
+    var c = S.charges[S.metal];
+    return { craft: c.craft || 0, craftMode: c.craftMode, profit: c.profit || 0, profitMode: c.profitMode };
+  }
+  function hasCharges() { var c = charges(); return c.craft > 0 || c.profit > 0; }
+  function rowMath(spotPerOz, frac) {
+    var c = charges();
+    var spotPerGram = spotPerOz / OZ_G;
+    var metalValue = spotPerGram * frac;
+    var craftPerGram = c.craftMode === 'pct' ? metalValue * c.craft / 100 : c.craft;
+    var profitPerGram = c.profitMode === 'pct' ? metalValue * c.profit / 100 : c.profit;
+    return { metalValue: metalValue, chargesPerGram: craftPerGram + profitPerGram, allIn: metalValue + craftPerGram + profitPerGram };
+  }
+
+  // ---------- Elements ----------
+  function $(id) { return document.getElementById(id); }
+  var el = {
+    carousel: $('carousel'), status: $('status'), stateText: $('state-text'), next: $('next'),
+    updated: $('updated'), error: $('error'), amount: $('amount'), amountLabel: $('amount-label'),
+    amountPre: $('amount-pre'), amountSuf: $('amount-suf'), craft: $('craft'), profit: $('profit'),
+    chargesMetal: $('charges-metal'), chargesHint: $('charges-hint'), tableTitle: $('table-title'),
+    colGram: $('col-gram'), colCalc: $('col-calc'), rows: $('rows'), note: $('note'),
+    manual: $('manual'), manualSummary: $('manual-summary'), manualLabel: $('manual-label'),
+    manualInput: $('manual-input'), manualMsg: $('manual-msg'), manualUse: $('manual-use'), manualBack: $('manual-back')
+  };
+  var panels = {}, tabs = {};
+  ORDER.forEach(function (metal) {
+    var p = document.querySelector('.panel[data-metal="' + metal + '"]');
+    panels[metal] = { caption: p.querySelector('.caption'), price: p.querySelector('.price'), delta: p.querySelector('.delta') };
+    tabs[metal] = document.querySelector('.tab[data-metal="' + metal + '"]');
+  });
+
+  // ---------- Rendering ----------
+  function statusOf(m) {
+    if (m.manual) return ['manual', 'Manual price'];
+    if (m.live) return ['live', 'Live'];
+    if (m.error) return ['offline', 'Offline'];
+    if (m.price != null) return ['stale', 'Last known price'];
+    return ['connecting', 'Connecting'];
+  }
+
+  function errorText(m) {
+    if (m.manual || !m.error) return '';
+    var what = {
+      offline: 'You are offline, so the price feed can’t be reached.',
+      timeout: 'The price feed did not answer within 10 seconds.',
+      network: 'The price feed could not be reached.',
+      http: 'The price feed returned an error' + (m.httpStatus ? ' (HTTP ' + m.httpStatus + ').' : '.'),
+      data: 'The price feed sent a price the app could not read.'
+    }[m.error] || 'The price could not be updated.';
+    return what + (m.price != null ? ' Showing the last known price.' : ' There is no saved price to show yet.');
+  }
+
+  function renderPanels() {
+    ORDER.forEach(function (metal) {
+      var m = S.m[metal], p = panels[metal];
+      p.caption.textContent = METALS[metal].name + ' spot, USD per ' + UNITS[S.unit].word;
+
+      var text = m.price != null ? usd(inUnit(m.price)) : '—';
+      p.price.textContent = text;
+      p.price.classList.toggle('long', text.length >= 10 && text.length < 12);
+      p.price.classList.toggle('xlong', text.length >= 12);
+      if (m.shown != null && m.price != null && m.price !== m.shown && !(reduceMotion && reduceMotion.matches)) {
+        p.price.classList.remove('flash');
+        void p.price.offsetWidth; // restart the animation
+        p.price.classList.add('flash');
+      }
+      m.shown = m.price;
+
+      var delta = p.delta;
+      delta.textContent = '';
+      if (m.manual) {
+        delta.textContent = 'Manual price, live updates paused';
+      } else if (m.sessionStart == null) {
+        delta.textContent = m.error ? 'No live price yet this session' : (m.price != null ? 'Checking for the latest price' : '');
+      } else {
+        var d = inUnit(m.price - m.sessionStart);
+        if (Math.abs(d) < 0.005) {
+          delta.textContent = 'No change since you opened the app';
+        } else {
+          var span = document.createElement('span');
+          span.className = d > 0 ? 'up' : 'down';
+          span.textContent = (d > 0 ? '▲ ' : '▼ ') + usd(Math.abs(d));
+          delta.appendChild(span);
+          delta.appendChild(document.createTextNode(' since you opened the app'));
+        }
+      }
+    });
+  }
+
+  function renderHeader() {
+    ORDER.forEach(function (metal) {
+      var on = metal === S.metal;
+      tabs[metal].setAttribute('aria-selected', on ? 'true' : 'false');
+      tabs[metal].tabIndex = on ? 0 : -1;
+    });
+    document.querySelectorAll('#units button').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.unit === S.unit ? 'true' : 'false');
+    });
+    var m = S.m[S.metal], st = statusOf(m);
+    el.status.dataset.state = st[0];
+    el.stateText.textContent = st[1];
+    if (m.manual) el.updated.textContent = 'Set on ' + (when(m.updatedAt) || 'an unknown date');
+    else if (m.price != null && when(m.updatedAt)) el.updated.textContent = 'Last updated ' + when(m.updatedAt);
+    else el.updated.textContent = 'Waiting for the price feed';
+    var err = errorText(m);
+    el.error.textContent = err;
+    el.error.hidden = !err;
+    renderNext();
+  }
+
+  function renderNext() {
+    var m = S.m[S.metal], text;
+    if (m.manual) text = 'Live updates paused';
+    else if (fetching) text = 'Updating…';
+    else if (nextAt) text = 'Next update in ' + Math.max(0, Math.ceil((nextAt - Date.now()) / 1000)) + 's';
+    else text = 'Update now';
+    if (el.next.textContent !== text) el.next.textContent = text;
+    el.next.disabled = m.manual;
+  }
+
+  function renderCalc() {
+    document.querySelectorAll('#mode button').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.mode === S.mode ? 'true' : 'false');
+    });
+    var budget = S.mode === 'budget';
+    el.amountLabel.textContent = budget ? 'Budget in USD' : 'Weight in grams';
+    el.amountPre.hidden = !budget;
+    el.amountSuf.hidden = budget;
+  }
+
+  function renderCharges() {
+    var c = S.charges[S.metal];
+    el.chargesMetal.textContent = 'optional, ' + METALS[S.metal].name.toLowerCase();
+    el.chargesHint.textContent = S.mode === 'budget'
+      ? 'If the jeweler told you these, add them. They come out of your budget, so you get fewer grams.'
+      : 'If the jeweler told you these, add them. They are added on top of the metal price.';
+    ['craft', 'profit'].forEach(function (key) {
+      var pct = c[key + 'Mode'] === 'pct';
+      $(key + '-pre').hidden = pct;
+      $(key + '-suf').textContent = pct ? '%' : '/g';
+      document.querySelectorAll('[data-charge="' + key + '"] button').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.dataset.cmode === c[key + 'Mode'] ? 'true' : 'false');
+      });
+    });
+  }
+
+  function renderTable() {
+    var metal = S.metal, m = S.m[metal], withCharges = hasCharges();
+    var budget = S.mode === 'budget';
+    var amount = budget ? S.budget : S.weight;
+    el.tableTitle.textContent = METALS[metal].name + ' by purity';
+    el.colGram.textContent = withCharges ? 'Per gram, with charges' : 'Per gram';
+    el.colCalc.textContent = budget
+      ? (S.budget != null ? usdBudget(S.budget) : '$0') + ' buys'
+      : (S.weight != null ? FW.format(S.weight) : '0') + ' g costs';
+
+    var html = '';
+    METALS[metal].rows.forEach(function (row) {
+      var gram = '—', gramSub = '', calc = '—', calcSub = '';
+      if (m.price != null) {
+        var r = rowMath(m.price, row[2]);
+        gram = usd(r.allIn);
+        if (withCharges) gramSub = 'Metal ' + usd(r.metalValue);
+        if (amount != null && r.allIn > 0) {
+          if (budget) {
+            var g = amount / r.allIn;
+            calc = grams(g);
+            if (withCharges) calcSub = '−' + grams(amount / r.metalValue - g) + ' to charges';
+          } else {
+            calc = usd(r.allIn * amount);
+            if (withCharges) calcSub = 'incl. ' + usd(r.chargesPerGram * amount) + ' charges';
+          }
+        }
+      }
+      html += '<tr>' +
+        '<td><span class="stamp ' + metal + '"><span class="stamp-mark">' + row[0] + '</span><span class="stamp-fine">' + row[1] + '</span></span></td>' +
+        '<td><span class="num">' + gram + '</span>' + (gramSub ? '<span class="sub">' + gramSub + '</span>' : '') + '</td>' +
+        '<td><span class="num">' + calc + '</span>' + (calcSub ? '<span class="sub">' + calcSub + '</span>' : '') + '</td>' +
+        '</tr>';
+    });
+    el.rows.innerHTML = html;
+    el.note.textContent = withCharges
+      ? 'Charges are applied to the ' + METALS[metal].name.toLowerCase() + ' on screen only. The shop may still round or quote differently, so confirm the final price on the invoice.'
+      : 'These are spot values. Shops add craftsmanship and profit on top, and buy back below spot.';
+  }
+
+  function renderManual() {
+    var name = METALS[S.metal].name, m = S.m[S.metal];
+    el.manualSummary.textContent = 'Set the ' + name.toLowerCase() + ' spot price yourself';
+    el.manualLabel.textContent = name + ' spot in USD per ' + UNITS[S.unit].word;
+    el.manualInput.placeholder = m.price != null ? F2.format(inUnit(m.price)).replace(/,/g, '') : '';
+    el.manualBack.hidden = !m.manual;
+  }
+
+  function render() {
+    renderPanels();
+    renderHeader();
+    renderCalc();
+    renderCharges();
+    renderTable();
+    renderManual();
+  }
+
+  // Input values are only written when the context changes, never while typing.
+  function fmtInput(v) { return v == null ? '' : String(Math.round(v * 1e6) / 1e6); }
+  function syncInputs() {
+    el.amount.value = fmtInput(S.mode === 'budget' ? S.budget : S.weight);
+    var c = S.charges[S.metal];
+    el.craft.value = fmtInput(c.craft);
+    el.profit.value = fmtInput(c.profit);
+  }
+
+  // ---------- Live prices ----------
+  var fetching = false, again = false, nextAt = null, timer = null, ticker = null;
+
+  function fetchMetal(metal) {
+    var m = S.m[metal];
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timedOut = false;
+    var t = setTimeout(function () { timedOut = true; if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
+    var req = fetch(API + METALS[metal].symbol, { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
+      .then(function (res) {
+        if (!res.ok) { var e = new Error('http'); e.kind = 'http'; e.status = res.status; throw e; }
+        return res.json();
+      })
+      .then(function (data) {
+        if (timedOut) { var te = new Error('timeout'); te.kind = 'timeout'; throw te; }
+        var price = data && Number(data.price);
+        if (!isPrice(price)) { var de = new Error('data'); de.kind = 'data'; throw de; }
+        if (m.manual) return;
+        var at = data.updatedAt && !isNaN(new Date(data.updatedAt).getTime()) ? data.updatedAt : new Date().toISOString();
+        m.price = price;
+        m.updatedAt = at;
+        m.lastLive = { price: price, updatedAt: at };
+        m.live = true;
+        m.error = null;
+        m.httpStatus = null;
+        if (m.sessionStart == null) m.sessionStart = price;
+        savePrice(metal);
+      })
+      .catch(function (e) {
+        if (m.manual) return;
+        m.live = false;
+        m.httpStatus = e && e.status || null;
+        if (timedOut) m.error = 'timeout';
+        else if (e && e.kind) m.error = e.kind;
+        else m.error = navigator.onLine === false ? 'offline' : 'network';
+      });
+    return req.then(function () { clearTimeout(t); });
+  }
+
+  function refresh() {
+    if (fetching) { again = true; return; }
+    var metals = ORDER.filter(function (k) { return !S.m[k].manual; });
+    clearTimeout(timer);
+    nextAt = null;
+    if (!metals.length) { renderNext(); return; }
+    fetching = true;
+    renderNext();
+    Promise.all(metals.map(fetchMetal)).then(function () {
+      fetching = false;
+      render();
+      if (again) { again = false; refresh(); return; }
+      schedule();
+    });
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    nextAt = null;
+    if (document.hidden || !ORDER.some(function (k) { return !S.m[k].manual; })) { renderNext(); return; }
+    nextAt = Date.now() + REFRESH_MS;
+    timer = setTimeout(refresh, REFRESH_MS);
+    renderNext();
+  }
+
+  function startTicker() { if (!ticker) ticker = setInterval(renderNext, 1000); }
+  function stopTicker() { clearInterval(ticker); ticker = null; }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      clearTimeout(timer);
+      nextAt = null;
+      stopTicker();
+    } else {
+      startTicker();
+      refresh();
+    }
+  });
+  window.addEventListener('online', refresh);
+  window.addEventListener('offline', function () {
+    ORDER.forEach(function (k) { var m = S.m[k]; if (!m.manual) { m.live = false; m.error = 'offline'; } });
+    render();
+  });
+  el.next.addEventListener('click', refresh);
+
+  // ---------- Metal switching: tabs + swipe carousel stay in sync ----------
+  var scrollTarget = null, scrollTargetTimer = null, rafId = 0;
+
+  function scrollToMetal(smooth) {
+    var i = ORDER.indexOf(S.metal);
+    scrollTarget = S.metal;
+    clearTimeout(scrollTargetTimer);
+    scrollTargetTimer = setTimeout(function () { scrollTarget = null; }, 900);
+    var left = i * el.carousel.clientWidth;
+    var reduce = reduceMotion && reduceMotion.matches;
+    if (el.carousel.scrollTo) el.carousel.scrollTo({ left: left, behavior: smooth && !reduce ? 'smooth' : 'auto' });
+    else el.carousel.scrollLeft = left;
+  }
+
+  function setMetal(metal, fromSwipe) {
+    if (metal === S.metal) { if (!fromSwipe) scrollToMetal(true); return; }
+    S.metal = metal;
+    store.set('metal', metal);
+    if (!fromSwipe) scrollToMetal(true);
+    el.manualInput.value = '';
+    el.manualMsg.textContent = '';
+    syncInputs();
+    render();
+  }
+
+  el.carousel.addEventListener('scroll', function () {
+    if (rafId) return;
+    rafId = requestAnimationFrame(function () {
+      rafId = 0;
+      var w = el.carousel.clientWidth || 1;
+      var i = Math.max(0, Math.min(ORDER.length - 1, Math.round(el.carousel.scrollLeft / w)));
+      var metal = ORDER[i];
+      if (scrollTarget) {
+        // A tab tap is animating the carousel: ignore the panels it passes on the way.
+        if (metal === scrollTarget && Math.abs(el.carousel.scrollLeft - i * w) < 2) scrollTarget = null;
+        return;
+      }
+      if (metal !== S.metal) setMetal(metal, true);
+    });
+  }, { passive: true });
+
+  ORDER.forEach(function (metal) {
+    tabs[metal].addEventListener('click', function () { setMetal(metal, false); });
+  });
+  document.querySelector('.tabs').addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    var i = ORDER.indexOf(S.metal) + (e.key === 'ArrowRight' ? 1 : -1);
+    var metal = ORDER[(i + ORDER.length) % ORDER.length];
+    setMetal(metal, false);
+    tabs[metal].focus();
+    e.preventDefault();
+  });
+  window.addEventListener('resize', function () { scrollToMetal(false); });
+
+  // ---------- Controls ----------
+  document.getElementById('units').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-unit]');
+    if (!b || b.dataset.unit === S.unit) return;
+    S.unit = b.dataset.unit;
+    store.set('unit', S.unit);
+    el.manualInput.value = '';
+    el.manualMsg.textContent = '';
+    render();
+  });
+
+  document.getElementById('mode').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-mode]');
+    if (!b || b.dataset.mode === S.mode) return;
+    S.mode = b.dataset.mode;
+    store.set('mode', S.mode);
+    syncInputs();
+    render();
+  });
+
+  function readInput(input) {
+    var v = parseAmount(input.value);
+    return v === null || isNaN(v) ? null : v;
+  }
+
+  el.amount.addEventListener('input', function () {
+    var v = readInput(el.amount);
+    if (S.mode === 'budget') { S.budget = v; store.set('budget', v); }
+    else { S.weight = v; store.set('weight', v); }
+    renderTable();
+  });
+
+  ['craft', 'profit'].forEach(function (key) {
+    el[key].addEventListener('input', function () {
+      S.charges[S.metal][key] = readInput(el[key]);
+      store.set('charges', S.charges);
+      renderTable();
+    });
+    document.querySelector('[data-charge="' + key + '"]').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-cmode]');
+      if (!b) return;
+      S.charges[S.metal][key + 'Mode'] = b.dataset.cmode;
+      store.set('charges', S.charges);
+      renderCharges();
+      renderTable();
+    });
+  });
+
+  // Tapping anywhere in a field focuses its input.
+  document.querySelectorAll('.field[data-focus]').forEach(function (f) {
+    f.addEventListener('click', function (e) { if (e.target.tagName !== 'INPUT') $(f.dataset.focus).focus(); });
+  });
+  document.querySelectorAll('input').forEach(function (input) {
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') input.blur(); });
+  });
+
+  // ---------- Manual price ----------
+  el.manualUse.addEventListener('click', function () {
+    var v = parseAmount(el.manualInput.value);
+    if (!isPrice(v)) {
+      el.manualMsg.textContent = 'Enter a price above zero, for example ' + (el.manualInput.placeholder || '4196.60') + '.';
+      el.manualInput.focus();
+      return;
+    }
+    var m = S.m[S.metal];
+    m.price = v / UNITS[S.unit].perOz;
+    m.updatedAt = new Date().toISOString();
+    m.manual = true;
+    m.live = false;
+    m.error = null;
+    savePrice(S.metal);
+    el.manualInput.value = '';
+    el.manualMsg.textContent = '';
+    el.manualInput.blur();
+    render();
+    if (!fetching) schedule();
+  });
+
+  el.manualBack.addEventListener('click', function () {
+    var m = S.m[S.metal];
+    m.manual = false;
+    m.live = false;
+    m.error = null;
+    m.price = m.lastLive ? m.lastLive.price : null;
+    m.updatedAt = m.lastLive ? m.lastLive.updatedAt : null;
+    savePrice(S.metal);
+    el.manualMsg.textContent = '';
+    render();
+    refresh();
+  });
+
+  // ---------- Start ----------
+  syncInputs();
+  render();
+  scrollToMetal(false);
+  requestAnimationFrame(function () { scrollToMetal(false); });
+  if (!document.hidden) { startTicker(); refresh(); }
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    var hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      // A new version took over: reload once so the updated files are used.
+      if (hadController && !window.__karatReloading) { window.__karatReloading = true; location.reload(); }
+    });
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () { /* app still works without it */ });
+    });
+  }
+})();
+</script>
+</body>
+</html>
