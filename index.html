@@ -232,6 +232,93 @@ button { cursor: pointer; }
 }
 .error[hidden] { display: none; }
 
+/* ---------- Chart ---------- */
+.ranges { display: flex; gap: 2px; margin-top: 14px; }
+.ranges button {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: none;
+  color: var(--on-band-soft);
+  font: 500 13px/1 var(--sans);
+  min-height: 34px;
+  padding: 0;
+  border-radius: 8px;
+}
+.ranges button[aria-pressed="true"] { background: rgba(248, 237, 238, 0.14); color: var(--on-band); }
+.chart-head { margin: 10px 0 0; min-height: 20px; font: 500 13px/1.5 var(--sans); color: var(--on-band-soft); font-variant-numeric: tabular-nums; }
+.chart-head .up { color: var(--rise); }
+.chart-head .down { color: var(--fall); }
+.chart {
+  position: relative;
+  height: 172px;
+  margin-top: 4px;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chart svg { display: block; width: 100%; height: 100%; overflow: visible; transition: opacity .2s; }
+.chart svg:focus-visible { outline-offset: 4px; border-radius: 4px; }
+.chart.loading svg { opacity: .45; }
+.chart .grid { stroke: rgba(217, 182, 188, 0.16); stroke-width: 1; shape-rendering: crispEdges; }
+.chart .tick { fill: var(--on-band-soft); font: 400 11px var(--sans); font-variant-numeric: tabular-nums; }
+.chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .cross { stroke: rgba(248, 237, 238, 0.55); stroke-width: 1; shape-rendering: crispEdges; }
+.chart .dot { stroke: var(--band); stroke-width: 2; }
+.chart-msg {
+  position: absolute;
+  inset: 0 0 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 12px;
+  text-align: center;
+}
+.chart-msg[hidden] { display: none; }
+.chart-msg p { margin: 0; max-width: 34ch; font: 400 14px/1.45 var(--sans); color: var(--on-band-soft); }
+.chart-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(217, 182, 188, 0.45);
+  background: none;
+  color: var(--on-band);
+  font: 500 14px/1 var(--sans);
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+}
+.chart-btn[hidden] { display: none; }
+.tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, calc(-100% - 6px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 10px 6px;
+  border-radius: 8px;
+  background: var(--on-band);
+  color: var(--band);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.tip[hidden] { display: none; }
+.tip strong { font: 600 15px/1.2 var(--sans); font-variant-numeric: tabular-nums; }
+.tip span { font: 400 12px/1.2 var(--sans); opacity: .8; font-variant-numeric: tabular-nums; }
+.chart-note { margin: 6px 0 0; font: 400 13px/1.4 var(--sans); color: var(--on-band-soft); }
+.chart-note[hidden] { display: none; }
+.key-saved { margin: 0 0 10px; font: 400 14px/1.4 var(--sans); color: var(--ink-soft); }
+.key-saved:empty { display: none; }
+.manual-body .hint { margin-bottom: 12px; }
+.manual-body a { color: var(--accent); }
+
 /* ---------- Content ---------- */
 main.wrap { padding-top: 18px; padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
 .card {
@@ -429,6 +516,29 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
       </section>
     </div>
 
+    <div class="chart-block">
+      <div class="ranges" role="group" aria-label="Chart range" id="ranges">
+        <button type="button" data-range="1D" aria-pressed="true">1D</button>
+        <button type="button" data-range="7D" aria-pressed="false">7D</button>
+        <button type="button" data-range="1M" aria-pressed="false">1M</button>
+        <button type="button" data-range="3M" aria-pressed="false">3M</button>
+        <button type="button" data-range="6M" aria-pressed="false">6M</button>
+        <button type="button" data-range="1Y" aria-pressed="false">1Y</button>
+        <button type="button" data-range="5Y" aria-pressed="false">5Y</button>
+        <button type="button" data-range="All" aria-pressed="false">All</button>
+      </div>
+      <p class="chart-head" id="chart-head"></p>
+      <div class="chart" id="chart">
+        <svg id="chart-svg" role="img" tabindex="0" aria-label="Price chart"></svg>
+        <div class="tip" id="chart-tip" hidden><strong id="tip-value"></strong><span id="tip-date"></span></div>
+        <div class="chart-msg" id="chart-msg" hidden>
+          <p id="chart-msg-text"></p>
+          <button type="button" class="chart-btn" id="chart-key-btn" hidden>Add history key</button>
+        </div>
+      </div>
+      <p class="chart-note" id="chart-note" hidden></p>
+    </div>
+
     <div class="units">
       <div class="pill" role="group" aria-label="Price unit" id="units">
         <button type="button" data-unit="oz" aria-pressed="true">oz</button>
@@ -518,6 +628,23 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
       <div class="actions">
         <button type="button" class="btn" id="manual-use">Use this price</button>
         <button type="button" class="btn ghost" id="manual-back" hidden>Back to live price</button>
+      </div>
+    </div>
+  </details>
+
+  <details class="card" id="keybox">
+    <summary>Price history key</summary>
+    <div class="manual-body">
+      <p class="hint">The 7D to All charts use gold-api.com price history, which needs a free API key. Create one at <a href="https://gold-api.com" rel="noopener" target="_blank">gold-api.com</a> and paste it here. It is saved on this device only. The free plan allows 10 history requests an hour, so the app keeps the history and refreshes it every few hours.</p>
+      <p class="key-saved" id="key-saved"></p>
+      <label class="label" for="key-input">API key</label>
+      <div class="field" data-focus="key-input">
+        <input id="key-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
+      </div>
+      <p class="form-msg" id="key-msg" role="status"></p>
+      <div class="actions">
+        <button type="button" class="btn" id="key-save">Save key</button>
+        <button type="button" class="btn ghost" id="key-remove" hidden>Remove key</button>
       </div>
     </div>
   </details>
@@ -845,6 +972,7 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
     renderCharges();
     renderTable();
     renderManual();
+    renderChart();
   }
 
   // Input values are only written when the context changes, never while typing.
@@ -883,6 +1011,7 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
         m.httpStatus = null;
         if (m.sessionStart == null) m.sessionStart = price;
         savePrice(metal);
+        recordSample(metal, price);
       })
       .catch(function (e) {
         if (m.manual) return;
@@ -992,7 +1121,7 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
     tabs[metal].focus();
     e.preventDefault();
   });
-  window.addEventListener('resize', function () { scrollToMetal(false); });
+  window.addEventListener('resize', function () { scrollToMetal(false); renderChart(); });
 
   // ---------- Controls ----------
   document.getElementById('units').addEventListener('click', function (e) {
@@ -1084,6 +1213,470 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
     render();
     refresh();
   });
+
+  // ---------- Price chart ----------
+  // 1D comes from the live prices this app records (every 30 s while open), plus hourly
+  // history when the key's plan includes it. 7D to All come from gold-api.com daily history
+  // (free API key, 10 requests an hour), fetched once as one long series and sliced per range.
+  var HIST_API = 'https://api.gold-api.com/history';
+  var DAY = 864e5;
+  var RANGES = {
+    '1D': { ms: DAY, words: 'the last 24 hours' },
+    '7D': { ms: 7 * DAY, words: 'the last 7 days' },
+    '1M': { ms: 30.44 * DAY, words: 'the last month' },
+    '3M': { ms: 91.31 * DAY, words: 'the last 3 months' },
+    '6M': { ms: 182.6 * DAY, words: 'the last 6 months' },
+    '1Y': { ms: 365.25 * DAY, words: 'the last year' },
+    '5Y': { ms: 5 * 365.25 * DAY, words: 'the last 5 years' },
+    'All': { ms: Infinity, words: 'all available history' }
+  };
+  var LINE = { gold: '#F2C95C', silver: '#D9DDE2' };
+  var DAILY_TTL = 6 * 36e5, HOURLY_TTL = 30 * 6e4;
+
+  S.range = oneOf(store.get('range'), Object.keys(RANGES), '1D');
+  S.apiKey = typeof store.get('apikey') === 'string' ? store.get('apikey') : '';
+  var keyMode = oneOf(store.get('keymode'), ['header', 'query'], 'header');
+  var hourlyOffUntil = Number(store.get('hourlyoff', 0)) || 0;
+
+  function validPoints(list) {
+    return Array.isArray(list) ? list.filter(function (p) { return Array.isArray(p) && isFinite(p[0]) && isPrice(p[1]); }) : [];
+  }
+  function loadSeries(key) {
+    var s = store.get(key, null);
+    return s && typeof s === 'object' ? { fetchedAt: Number(s.fetchedAt) || 0, points: validPoints(s.points) } : null;
+  }
+  var samples = {}, daily = {}, hourly = {}, histState = {};
+  ORDER.forEach(function (metal) {
+    samples[metal] = validPoints(store.get('samples.' + metal, []));
+    daily[metal] = loadSeries('daily.' + metal);
+    hourly[metal] = loadSeries('hourly.' + metal);
+    histState[metal] = { loading: false, error: null, retryAt: 0, hourLoading: false, hourRetryAt: 0 };
+  });
+
+  // Live prices are kept at 1-minute resolution for 24 h and 15-minute resolution up to 7 days.
+  function recordSample(metal, price) {
+    var list = samples[metal], now = Date.now(), last = list[list.length - 1];
+    if (last && now - last[0] < 6e4) last[1] = price;
+    else list.push([now, price]);
+    var kept = [], lastBucket = null;
+    list.forEach(function (p) {
+      var age = now - p[0];
+      if (age > 7 * DAY) return;
+      if (age <= DAY) { kept.push(p); return; }
+      var bucket = Math.floor(p[0] / 9e5);
+      if (bucket === lastBucket) kept[kept.length - 1] = p;
+      else { kept.push(p); lastBucket = bucket; }
+    });
+    samples[metal] = kept;
+    store.set('samples.' + metal, kept);
+  }
+
+  // gold-api.com history: tolerate the field names and time formats it may use.
+  function toTime(v) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return v < 1e12 ? v * 1000 : v;
+    var s = String(v).trim();
+    if (/^\d+(\.\d+)?$/.test(s)) return toTime(Number(s));
+    if (/^\d{4}-\d{2}-\d{2} \d/.test(s)) s = s.replace(' ', 'T');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) s += 'T00:00:00Z';
+    else if (/^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(s)) s += 'Z';
+    var t = Date.parse(s);
+    return isNaN(t) ? null : t;
+  }
+  function pick(obj, keys) {
+    for (var i = 0; i < keys.length; i++) if (obj[keys[i]] != null && obj[keys[i]] !== '') return obj[keys[i]];
+    return null;
+  }
+  function parseHistory(data) {
+    var rows = Array.isArray(data) ? data
+      : data && (data.data || data.items || data.history || data.prices || data.results || data.rows);
+    if (!Array.isArray(rows)) { var e = new Error('data'); e.kind = 'data'; throw e; }
+    var pts = [];
+    rows.forEach(function (r) {
+      var t = null, p = null;
+      if (Array.isArray(r)) { t = toTime(r[0]); p = Number(r[1]); }
+      else if (r && typeof r === 'object') {
+        t = toTime(pick(r, ['timestamp', 'time', 'date', 'day', 'hour', 'minute', 'week', 'month', 'period', 'datetime', 'createdAt', 'updatedAt', 't', 'ts']));
+        p = Number(pick(r, ['avg_price', 'avgPrice', 'average', 'avg', 'price', 'close', 'close_price', 'closePrice', 'value', 'max_price', 'maxPrice', 'open']));
+        if (!isPrice(p)) {
+          Object.keys(r).some(function (k) { var n = Number(r[k]); if (/price/i.test(k) && isPrice(n)) { p = n; return true; } return false; });
+        }
+      }
+      if (t != null && isPrice(p)) pts.push([t, p]);
+    });
+    if (!pts.length) { var e2 = new Error('empty'); e2.kind = 'empty'; throw e2; }
+    pts.sort(function (a, b) { return a[0] - b[0]; });
+    return pts.filter(function (p, i) { return i === 0 || p[0] !== pts[i - 1][0]; });
+  }
+
+  function histRequest(symbol, start, end, groupBy, mode) {
+    var url = HIST_API + '?symbol=' + symbol + '&startTimestamp=' + start + '&endTimestamp=' + end + '&groupBy=' + groupBy;
+    var opts = { cache: 'no-store' };
+    if (mode === 'query') url += '&x-api-key=' + encodeURIComponent(S.apiKey);
+    else opts.headers = { 'x-api-key': S.apiKey };
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    if (ctrl) opts.signal = ctrl.signal;
+    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
+    return fetch(url, opts)
+      .then(function (res) {
+        if (!res.ok) { var e = new Error('http'); e.kind = 'http'; e.status = res.status; throw e; }
+        return res.json();
+      }, function () {
+        var e = new Error('network'); e.kind = navigator.onLine === false ? 'offline' : 'network'; throw e;
+      })
+      .then(function (data) { clearTimeout(t); return parseHistory(data); },
+        function (e) { clearTimeout(t); throw e; });
+  }
+
+  // The key goes in an x-api-key header; if the browser or server refuses that, try it as a query parameter.
+  function fetchHistory(symbol, start, end, groupBy) {
+    return histRequest(symbol, start, end, groupBy, keyMode).catch(function (e) {
+      if (!(e.kind === 'network' || e.status === 401 || e.status === 403)) throw e;
+      var other = keyMode === 'header' ? 'query' : 'header';
+      return histRequest(symbol, start, end, groupBy, other).then(function (pts) {
+        keyMode = other;
+        store.set('keymode', other);
+        return pts;
+      }, function (e2) { throw e.kind === 'network' ? e2 : e; });
+    });
+  }
+
+  function loadDaily(metal) {
+    var st = histState[metal], d = daily[metal], now = Date.now();
+    if (st.loading || now < st.retryAt || (d && now - d.fetchedAt < DAILY_TTL)) return;
+    st.loading = true;
+    var end = Math.floor(now / 1000);
+    var symbol = METALS[metal].symbol;
+    fetchHistory(symbol, 0, end, 'day')
+      .catch(function (e) {
+        // If the provider won't serve everything since 1970, settle for 10 years.
+        if (e.status === 400 || e.status === 422) return fetchHistory(symbol, end - Math.round(10 * 365.25 * 86400), end, 'day');
+        throw e;
+      })
+      .then(function (pts) {
+        daily[metal] = { fetchedAt: Date.now(), points: pts };
+        store.set('daily.' + metal, daily[metal]);
+        st.error = null;
+      }, function (e) {
+        st.error = e;
+        st.retryAt = Date.now() + (e.status === 429 ? 15 * 6e4 : e.status === 401 || e.status === 403 ? 60 * 6e4 : 2 * 6e4);
+      })
+      .then(function () { st.loading = false; renderChart(); });
+    renderChart();
+  }
+
+  // Hourly history is a paid feature on gold-api.com; if the key can't use it, stop asking for a day.
+  function loadHourly(metal) {
+    var st = histState[metal], h = hourly[metal], now = Date.now();
+    if (st.hourLoading || now < hourlyOffUntil || now < st.hourRetryAt || (h && now - h.fetchedAt < HOURLY_TTL)) return;
+    st.hourLoading = true;
+    var end = Math.floor(now / 1000);
+    fetchHistory(METALS[metal].symbol, end - 2 * 86400, end, 'hour')
+      .then(function (pts) {
+        hourly[metal] = { fetchedAt: Date.now(), points: pts };
+        store.set('hourly.' + metal, hourly[metal]);
+      }, function (e) {
+        if (e.kind === 'http' && e.status !== 429 && e.status < 500) {
+          hourlyOffUntil = Date.now() + DAY;
+          store.set('hourlyoff', hourlyOffUntil);
+        } else {
+          st.hourRetryAt = Date.now() + 15 * 6e4;
+        }
+      })
+      .then(function () { st.hourLoading = false; renderChart(); });
+  }
+
+  function ensureHistory() {
+    if (!S.apiKey || document.hidden) return;
+    if (S.range === '1D') loadHourly(S.metal);
+    else loadDaily(S.metal);
+  }
+
+  function chartSeries(metal, range) {
+    var now = Date.now(), ms = RANGES[range].ms, from = ms === Infinity ? -Infinity : now - ms;
+    var local = samples[metal].filter(function (p) { return p[0] >= from; });
+    var pts = [], gap = Infinity, source = 'none';
+    if (range === '1D') {
+      var firstLocal = local.length ? local[0][0] : Infinity;
+      var hrs = (hourly[metal] && hourly[metal].points || []).filter(function (p) { return p[0] >= from && p[0] < firstLocal - 30 * 6e4; });
+      pts = hrs.concat(local);
+      gap = hrs.length ? Infinity : 10 * 6e4;
+      source = hrs.length ? 'history' : 'local';
+    } else if (daily[metal] && daily[metal].points.length) {
+      pts = daily[metal].points.filter(function (p) { return p[0] >= from; });
+      source = 'history';
+      var last = S.m[metal].lastLive;
+      var lastT = pts.length ? pts[pts.length - 1][0] : -Infinity;
+      if (last && now - lastT > 36e5) pts = pts.concat([[samples[metal].length ? samples[metal][samples[metal].length - 1][0] : now, last.price]]);
+    } else if (range === '7D' && local.length > 1) {
+      pts = local;
+      gap = 45 * 6e4;
+      source = 'local';
+    }
+    return { pts: pts, gap: gap, source: source, from: from };
+  }
+
+  function niceStep(span, count) {
+    var raw = span / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+  }
+  var DT = {
+    time: new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }),
+    dayTime: new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }),
+    day: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }),
+    dayYear: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    monthYear: new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric' }),
+    year: new Intl.DateTimeFormat('en-GB', { year: 'numeric' })
+  };
+  function axisDate(t, span) {
+    if (span <= 1.5 * DAY) return DT.time.format(t);
+    if (span <= 200 * DAY) return DT.day.format(t);
+    if (span <= 3 * 365 * DAY) return DT.monthYear.format(t);
+    return DT.year.format(t);
+  }
+  function tipDate(t, source, span) {
+    return source === 'local' || span <= 1.5 * DAY ? DT.dayTime.format(t) : DT.dayYear.format(t);
+  }
+
+  var chartEl = $('chart'), svg = $('chart-svg'), tip = $('chart-tip'), chartMsg = $('chart-msg');
+  var chartView = null, cursorIndex = null;
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function svgEl(name, attrs, parent) {
+    var node = document.createElementNS(SVGNS, name);
+    for (var k in attrs) node.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(node);
+    return node;
+  }
+
+  function historyError(e) {
+    if (!e) return '';
+    if (e.status === 401 || e.status === 403) return 'gold-api.com did not accept the history key (HTTP ' + e.status + '). Check it under Price history key.';
+    if (e.status === 429) return 'The free plan allows 10 history requests an hour. The app will try again in 15 minutes.';
+    if (e.kind === 'offline') return 'You are offline, so price history can’t be loaded.';
+    if (e.kind === 'network') return 'gold-api.com could not be reached for price history.';
+    if (e.kind === 'data') return 'gold-api.com sent price history in a format the app could not read.';
+    if (e.kind === 'empty') return 'gold-api.com returned no price history for this metal.';
+    return 'gold-api.com returned an error for price history' + (e.status ? ' (HTTP ' + e.status + ').' : '.');
+  }
+
+  function renderChart() {
+    ensureHistory();
+    document.querySelectorAll('#ranges button').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.range === S.range ? 'true' : 'false');
+    });
+    var metal = S.metal, range = S.range, st = histState[metal];
+    var series = chartSeries(metal, range);
+    var per = UNITS[S.unit].perOz;
+    var pts = series.pts;
+    if (pts.length > 700) {
+      var stepN = Math.ceil(pts.length / 600), thin = [];
+      for (var i = 0; i < pts.length; i += stepN) thin.push(pts[i]);
+      if (thin[thin.length - 1] !== pts[pts.length - 1]) thin.push(pts[pts.length - 1]);
+      pts = thin;
+    }
+    var loading = range !== '1D' && st.loading;
+    chartEl.classList.toggle('loading', loading && pts.length > 1);
+
+    // Messages when there is nothing (or not enough) to draw.
+    var msg = '', keyBtn = false;
+    if (pts.length < 2) {
+      if (range === '1D') msg = 'The 1D line fills in while the app is open: it records the live price every 30 seconds.';
+      else if (!S.apiKey) { msg = 'Charts from 7D to All need a free gold-api.com history key.'; keyBtn = true; }
+      else if (loading) msg = 'Loading price history…';
+      else if (st.error) { msg = historyError(st.error); keyBtn = st.error.status === 401 || st.error.status === 403; }
+      else msg = 'Loading price history…';
+      if (!S.apiKey && range === '7D' && samples[metal].length > 1) msg = 'Not enough live prices yet for 7D. ' + msg;
+    }
+    $('chart-msg-text').textContent = msg;
+    $('chart-key-btn').hidden = !keyBtn;
+    chartMsg.hidden = !msg;
+    var note = '';
+    if (pts.length > 1 && range !== '1D' && st.error) note = 'Showing saved history. ' + historyError(st.error);
+    else if (pts.length > 1 && range === '7D' && series.source === 'local') note = 'From live prices recorded by this app. Add a history key for full daily history.';
+    $('chart-note').textContent = note;
+    $('chart-note').hidden = !note;
+
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    tip.hidden = true;
+    chartView = null;
+    var head = $('chart-head');
+    head.textContent = '';
+    if (pts.length < 2) { svg.setAttribute('aria-label', METALS[metal].name + ' price chart: ' + (msg || 'no data')); return; }
+
+    // Change over the range.
+    var first = pts[0], last = pts[pts.length - 1];
+    var d = (last[1] - first[1]) * per, pct = (last[1] - first[1]) / first[1] * 100;
+    var span = last[0] - first[0];
+    var since = series.from !== -Infinity && first[0] - series.from > RANGES[range].ms * 0.1
+      ? 'since ' + (span <= 1.5 * DAY ? DT.time.format(first[0]) : DT.dayYear.format(first[0]))
+      : 'over ' + RANGES[range].words;
+    if (Math.abs(d) < 0.005) head.textContent = 'No change ' + since;
+    else {
+      var chg = document.createElement('span');
+      chg.className = d > 0 ? 'up' : 'down';
+      chg.textContent = (d > 0 ? '▲ ' : '▼ ') + usd(Math.abs(d)) + ' (' + Math.abs(pct).toFixed(pct > -10 && pct < 10 ? 2 : 1) + '%)';
+      head.appendChild(chg);
+      head.appendChild(document.createTextNode(' ' + since));
+    }
+
+    // Scales.
+    var W = svg.clientWidth || chartEl.clientWidth || 358, H = chartEl.clientHeight || 172;
+    var lo = Infinity, hi = -Infinity;
+    pts.forEach(function (p) { var v = p[1] * per; if (v < lo) lo = v; if (v > hi) hi = v; });
+    var pad = (hi - lo) * 0.12 || hi * 0.002 || 1;
+    var y0 = lo - pad, y1 = hi + pad;
+    var step = niceStep(y1 - y0, 3);
+    var dec = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
+    var tickFmt = nf(dec, dec);
+    var ticks = [];
+    for (var tv = Math.ceil(y0 / step) * step; tv <= y1; tv += step) ticks.push(tv);
+    var gutter = Math.max.apply(null, ticks.map(function (v) { return ('$' + tickFmt.format(v)).length; })) * 6.4 + 10;
+    var top = 8, bottom = H - 22, left = 0, right = W - gutter;
+    var t0 = first[0], t1 = last[0];
+    function X(t) { return left + (t - t0) / (t1 - t0) * (right - left); }
+    function Y(v) { return bottom - (v - y0) / (y1 - y0) * (bottom - top); }
+
+    ticks.forEach(function (v) {
+      var y = Math.round(Y(v)) + 0.5;
+      svgEl('line', { class: 'grid', x1: left, x2: right, y1: y, y2: y }, svg);
+      var label = svgEl('text', { class: 'tick', x: W, y: y + 4, 'text-anchor': 'end' }, svg);
+      label.textContent = '$' + tickFmt.format(v);
+    });
+    var xl = svgEl('text', { class: 'tick', x: left, y: H - 4, 'text-anchor': 'start' }, svg);
+    xl.textContent = axisDate(t0, span);
+    var xr = svgEl('text', { class: 'tick', x: right, y: H - 4, 'text-anchor': 'end' }, svg);
+    xr.textContent = axisDate(t1, span);
+
+    // Line and area, broken where live recording had gaps (app closed).
+    var color = LINE[metal];
+    var defs = svgEl('defs', {}, svg);
+    var gradId = 'area-' + metal;
+    var grad = svgEl('linearGradient', { id: gradId, x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+    svgEl('stop', { offset: '0', 'stop-color': color, 'stop-opacity': '0.22' }, grad);
+    svgEl('stop', { offset: '1', 'stop-color': color, 'stop-opacity': '0' }, grad);
+    var line = '', area = '', seg = [];
+    function flush() {
+      if (seg.length > 1) {
+        line += 'M' + seg.join('L');
+        area += 'M' + seg[0].split(',')[0] + ',' + bottom + 'L' + seg.join('L') + 'L' + seg[seg.length - 1].split(',')[0] + ',' + bottom + 'Z';
+      }
+      seg = [];
+    }
+    pts.forEach(function (p, i) {
+      if (i > 0 && p[0] - pts[i - 1][0] > series.gap) flush();
+      seg.push(X(p[0]).toFixed(1) + ',' + Y(p[1] * per).toFixed(1));
+    });
+    flush();
+    svgEl('path', { d: area, fill: 'url(#' + gradId + ')', stroke: 'none' }, svg);
+    svgEl('path', { class: 'line', d: line, stroke: color }, svg);
+    svgEl('circle', { class: 'dot', cx: X(t1), cy: Y(last[1] * per), r: 4, fill: color }, svg);
+    var cross = svgEl('line', { class: 'cross', x1: 0, x2: 0, y1: top, y2: bottom, visibility: 'hidden' }, svg);
+    var cdot = svgEl('circle', { class: 'dot', cx: 0, cy: 0, r: 4.5, fill: color, visibility: 'hidden' }, svg);
+
+    var lowP = pts.reduce(function (a, p) { return p[1] < a[1] ? p : a; }), highP = pts.reduce(function (a, p) { return p[1] > a[1] ? p : a; });
+    svg.setAttribute('aria-label', METALS[metal].name + ' price, ' + RANGES[range].words + ', USD per ' + UNITS[S.unit].word + ': ' +
+      usd(first[1] * per) + ' on ' + tipDate(first[0], series.source, span) + ' to ' + usd(last[1] * per) + ' on ' + tipDate(last[0], series.source, span) +
+      '. Low ' + usd(lowP[1] * per) + ', high ' + usd(highP[1] * per) + '. Use the arrow keys to read values.');
+
+    chartView = { pts: pts, X: X, Y: Y, per: per, cross: cross, cdot: cdot, source: series.source, span: span, W: W };
+    if (cursorIndex != null) showCursor(Math.min(cursorIndex, pts.length - 1));
+  }
+
+  function showCursor(i) {
+    var v = chartView;
+    if (!v) return;
+    cursorIndex = i;
+    var p = v.pts[i], x = v.X(p[0]), y = v.Y(p[1] * v.per);
+    v.cross.setAttribute('x1', x); v.cross.setAttribute('x2', x); v.cross.setAttribute('visibility', 'visible');
+    v.cdot.setAttribute('cx', x); v.cdot.setAttribute('cy', y); v.cdot.setAttribute('visibility', 'visible');
+    $('tip-value').textContent = usd(p[1] * v.per);
+    $('tip-date').textContent = tipDate(p[0], v.source, v.span);
+    tip.hidden = false;
+    var half = tip.offsetWidth / 2;
+    tip.style.left = Math.max(half, Math.min(v.W - half, x)) + 'px';
+  }
+  function hideCursor() {
+    cursorIndex = null;
+    tip.hidden = true;
+    if (chartView) { chartView.cross.setAttribute('visibility', 'hidden'); chartView.cdot.setAttribute('visibility', 'hidden'); }
+  }
+  function nearestIndex(clientX) {
+    var v = chartView, x = clientX - svg.getBoundingClientRect().left;
+    var lo = 0, hi = v.pts.length - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (v.X(v.pts[mid][0]) < x) lo = mid; else hi = mid; }
+    return Math.abs(v.X(v.pts[lo][0]) - x) <= Math.abs(v.X(v.pts[hi][0]) - x) ? lo : hi;
+  }
+  var hideTimer = null;
+  svg.addEventListener('pointerdown', function (e) { clearTimeout(hideTimer); if (chartView) showCursor(nearestIndex(e.clientX)); });
+  svg.addEventListener('pointermove', function (e) { if (chartView && (e.pointerType === 'mouse' || e.buttons || e.pressure)) showCursor(nearestIndex(e.clientX)); });
+  svg.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hideCursor(); });
+  svg.addEventListener('pointercancel', hideCursor);
+  svg.addEventListener('pointerup', function (e) { if (e.pointerType !== 'mouse') hideTimer = setTimeout(hideCursor, 1500); });
+  svg.addEventListener('keydown', function (e) {
+    if (!chartView) return;
+    var n = chartView.pts.length, i = cursorIndex == null ? n - 1 : cursorIndex;
+    if (e.key === 'ArrowLeft') i = Math.max(0, i - 1);
+    else if (e.key === 'ArrowRight') i = Math.min(n - 1, i + 1);
+    else if (e.key === 'Home') i = 0;
+    else if (e.key === 'End') i = n - 1;
+    else if (e.key === 'Escape') { hideCursor(); return; }
+    else return;
+    e.preventDefault();
+    showCursor(i);
+  });
+  svg.addEventListener('blur', hideCursor);
+
+  $('ranges').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-range]');
+    if (!b || b.dataset.range === S.range) return;
+    S.range = b.dataset.range;
+    store.set('range', S.range);
+    hideCursor();
+    renderChart();
+  });
+
+  // ---------- History key ----------
+  var keybox = $('keybox'), keyInput = $('key-input'), keyMsg = $('key-msg');
+  function renderKey() {
+    $('key-saved').textContent = S.apiKey ? 'A key ending in …' + S.apiKey.slice(-4) + ' is saved on this device.' : '';
+    $('key-remove').hidden = !S.apiKey;
+    $('key-save').textContent = S.apiKey ? 'Replace key' : 'Save key';
+  }
+  function resetHistoryErrors() {
+    ORDER.forEach(function (k) { histState[k].error = null; histState[k].retryAt = 0; histState[k].hourRetryAt = 0; });
+    hourlyOffUntil = 0;
+    store.set('hourlyoff', 0);
+  }
+  $('key-save').addEventListener('click', function () {
+    var v = keyInput.value.trim();
+    if (!v) { keyMsg.textContent = 'Paste your gold-api.com API key first.'; keyInput.focus(); return; }
+    S.apiKey = v;
+    store.set('apikey', v);
+    keyMode = 'header';
+    store.set('keymode', keyMode);
+    resetHistoryErrors();
+    keyInput.value = '';
+    keyInput.blur();
+    keyMsg.textContent = 'Key saved. Loading history…';
+    renderKey();
+    if (S.range === '1D') { S.range = '1M'; store.set('range', S.range); }
+    ORDER.forEach(function (k) { if (daily[k]) daily[k].fetchedAt = 0; });
+    renderChart();
+  });
+  $('key-remove').addEventListener('click', function () {
+    S.apiKey = '';
+    store.set('apikey', '');
+    resetHistoryErrors();
+    keyMsg.textContent = 'Key removed. Saved history stays until it is replaced.';
+    renderKey();
+    renderChart();
+  });
+  $('chart-key-btn').addEventListener('click', function () {
+    keybox.open = true;
+    keybox.scrollIntoView({ behavior: reduceMotion && reduceMotion.matches ? 'auto' : 'smooth', block: 'center' });
+    setTimeout(function () { keyInput.focus(); }, 350);
+  });
+  renderKey();
 
   // ---------- Start ----------
   syncInputs();

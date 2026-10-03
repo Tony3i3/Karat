@@ -1,6 +1,6 @@
 // Karat service worker.
 // Bump CACHE on every deploy so installed copies pick up the new files.
-const CACHE = 'karat-v1';
+const CACHE = 'karat-v2';
 const FONT_CACHE = 'karat-fonts';
 
 const SHELL = [
