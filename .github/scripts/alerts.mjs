@@ -81,7 +81,11 @@ function targetLabel(t) {
 
 async function main() {
   let config;
-  try { config = readConfig(); } catch (e) { fail('KARAT_PUSH_CONFIG could not be read: ' + e.message); return; }
+  try { config = readConfig(); } catch {
+    // Don't echo parser messages: they can quote part of the secret into the public log.
+    fail('KARAT_PUSH_CONFIG could not be read. Copy the setup code again from the app and paste the whole code into the secret.');
+    return;
+  }
   if (!config) {
     log('KARAT_PUSH_CONFIG is not set yet. Turn on notifications in the app and add the setup code as a repository secret.');
     writeState(readState());
@@ -96,7 +100,6 @@ async function main() {
 
   const prices = {};
   for (const m of Object.keys(METALS)) prices[m] = await fetchPrice(METALS[m].symbol);
-  log('Prices:', JSON.stringify(prices));
 
   const { date, time } = localParts(config.tz);
   const messages = [];
@@ -185,24 +188,26 @@ async function main() {
 
   for (const m of Object.keys(METALS)) state.last[m] = { price: prices[m], at: NOW.toISOString() };
 
+  // Logs of public repositories are public: never log alert contents, only counts.
   const subject = process.env.KARAT_VAPID_SUBJECT || config.subject || 'https://github.com/';
+  let sent = 0;
   for (const msg of messages.slice(0, 6)) {
     try {
-      const res = await webpush.sendNotification(config.sub, JSON.stringify({ ...msg, url: './' }), {
+      await webpush.sendNotification(config.sub, JSON.stringify({ ...msg, url: './' }), {
         vapidDetails: { subject, publicKey: config.vapid.publicKey, privateKey: config.vapid.privateKey },
         TTL: 6 * 3600,
         urgency: 'high'
       });
-      log(`Sent "${msg.title}" (HTTP ${res.statusCode})`);
+      sent++;
     } catch (e) {
       if (e.statusCode === 404 || e.statusCode === 410) {
         fail('The phone\u2019s push subscription has expired. Open Karat, turn notifications off and on, and update the KARAT_PUSH_CONFIG secret with the new setup code.');
         break;
       }
-      fail(`Sending "${msg.title}" failed: HTTP ${e.statusCode || '?'} ${e.body || e.message}`);
+      fail(`Sending a notification failed: HTTP ${e.statusCode || '?'}`);
     }
   }
-  if (!messages.length) log('Nothing to send.');
+  log(`Sent ${sent} notification${sent === 1 ? '' : 's'}.`);
   writeState(state);
 }
 
