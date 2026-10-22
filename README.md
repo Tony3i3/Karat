@@ -17,12 +17,35 @@ Plain HTML/CSS/JS, no build step. Prices come from [gold-api.com](https://gold-a
   requests an hour, so the app fetches one long daily series per metal, saves it, and refreshes
   it at most every 6 hours.
 
+## Notifications
+
+Price targets, big daily moves and a daily summary arrive as push notifications, even when the
+app is closed. On iPhone this needs iOS 16.4+ and Karat added to the Home Screen.
+
+How it works: the app subscribes the phone using a key pair it generates on the device, and
+builds a **setup code** (subscription, key pair, alerts, time zone). That code goes into the
+repository secret `KARAT_PUSH_CONFIG`. The workflow `.github/workflows/price-alerts.yml` runs
+`.github/scripts/alerts.mjs` about every 10 minutes (GitHub may delay scheduled runs), checks
+gold-api.com prices and sends the notifications. What was already sent is remembered between
+runs with the Actions cache.
+
+1. In the app: Notifications → Turn on notifications → set alerts → Copy setup code.
+2. On GitHub: Settings → Secrets and variables → Actions → New repository secret, name
+   `KARAT_PUSH_CONFIG`, paste the code. Update it whenever you change alerts in the app.
+3. Optional: Actions → Price alerts → Run workflow sends a test notification right away.
+
+Price targets fire once when crossed and re-arm after the price moves 0.5% back past the target.
+Big moves compare with the last price seen before midnight in your time zone (≈ previous close).
+GitHub turns off scheduled workflows in public repositories after 60 days without activity; if
+that happens, re-enable it under Actions → Price alerts.
+
 ## Files
 
 - `index.html`: the whole app (CSS and JS inline)
 - `manifest.webmanifest`: install metadata
 - `sw.js`: service worker (offline app shell, cached fonts; prices always go to the network)
 - `icons/`: app icons, favicon and apple-touch-icon
+- `.github/workflows/price-alerts.yml`, `.github/scripts/alerts.mjs`: scheduled price alerts
 
 All URLs are relative, so the app works from a domain root or a subfolder.
 

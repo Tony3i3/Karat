@@ -1,0 +1,58 @@
+name: Price alerts
+
+# Checks gold and silver prices and sends Karat push notifications.
+# Needs the KARAT_PUSH_CONFIG repository secret (the setup code from the app's Notifications card).
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: Also send a test notification
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: price-alerts
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore alert state
+        uses: actions/cache/restore@v4
+        with:
+          path: .karat-state
+          key: karat-state-${{ github.run_id }}
+          restore-keys: karat-state-
+
+      - name: Install web-push
+        run: npm install --no-save --no-audit --no-fund --prefix .github/scripts web-push@3.6.7
+
+      - name: Check prices and notify
+        env:
+          KARAT_PUSH_CONFIG: ${{ secrets.KARAT_PUSH_CONFIG }}
+          KARAT_TEST: ${{ inputs.test == true }}
+          KARAT_VAPID_SUBJECT: https://${{ github.repository_owner }}.github.io/
+        run: node .github/scripts/alerts.mjs
+
+      - name: Save alert state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .karat-state
+          key: karat-state-${{ github.run_id }}

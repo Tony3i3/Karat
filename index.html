@@ -319,6 +319,87 @@ button { cursor: pointer; }
 .manual-body .hint { margin-bottom: 12px; }
 .manual-body a { color: var(--accent); }
 
+/* ---------- Notifications ---------- */
+.sub-h { margin: 20px 0 8px; font: 600 17px/1.3 var(--serif); font-variation-settings: "opsz" 36; color: var(--ink); }
+#nt-on > .sub-h:first-child { margin-top: 4px; }
+.targets { list-style: none; margin: 0 0 10px; padding: 0; }
+.targets:empty { display: none; }
+.targets li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font: 400 15px/1.35 var(--sans);
+}
+.targets li:last-child { border-bottom: 1px solid var(--line); }
+.targets small { display: block; color: var(--ink-soft); font-size: 13px; font-variant-numeric: tabular-nums; }
+.link-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: 500 15px/1 var(--sans);
+  padding: 10px 0 10px 8px;
+  flex: none;
+}
+.target-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.select { position: relative; }
+.select select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 34px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--field);
+  color: var(--ink);
+  font: 500 16px/1.2 var(--sans);
+}
+.select::after {
+  content: "";
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -6px;
+  border-right: 2px solid var(--ink-soft);
+  border-bottom: 2px solid var(--ink-soft);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.select select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.check { display: flex; align-items: flex-start; gap: 10px; font: 400 15px/1.4 var(--sans); color: var(--ink); cursor: pointer; }
+.check input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--accent); }
+.inline-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding-left: 32px; }
+.inline-row .hint { margin: 0; }
+.field.small { min-height: 46px; width: 112px; flex: none; }
+.field.small input { padding: 10px 0; }
+.field.small.time { width: 140px; }
+.setup-status { margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--field); border: 1px solid var(--line); font: 400 14px/1.45 var(--sans); color: var(--ink); }
+.setup-status.stale { border-color: var(--accent); }
+.steps { margin: 0; padding-left: 20px; font: 400 14px/1.5 var(--sans); color: var(--ink-soft); }
+.steps li { margin-bottom: 6px; }
+.steps a { color: var(--accent); }
+code { font: 500 13px/1 ui-monospace, 'SF Mono', Menlo, monospace; background: var(--field); border: 1px solid var(--line); border-radius: 5px; padding: 2px 5px; color: var(--ink); }
+.code {
+  width: 100%;
+  min-height: 96px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--field);
+  color: var(--ink);
+  font: 400 16px/1.3 ui-monospace, 'SF Mono', Menlo, monospace;
+  word-break: break-all;
+}
+.code[hidden] { display: none; }
+
 /* ---------- Content ---------- */
 main.wrap { padding-top: 18px; padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
 .card {
@@ -615,6 +696,71 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
     </table>
     <p class="note" id="note"></p>
   </section>
+
+  <details class="card" id="notify">
+    <summary>Notifications</summary>
+    <div class="manual-body">
+      <p class="hint" id="nt-unsupported" hidden></p>
+
+      <div id="nt-off" hidden>
+        <p class="hint">Get price targets, big moves and a daily summary on this phone, even when Karat is closed. A free scheduled check in your GitHub repository sends them.</p>
+        <div class="actions"><button type="button" class="btn" id="nt-enable">Turn on notifications</button></div>
+      </div>
+
+      <div id="nt-on" hidden>
+        <h3 class="sub-h">Price targets</h3>
+        <ul class="targets" id="nt-targets"></ul>
+        <div class="target-form">
+          <div class="select"><select id="nt-purity" aria-label="Metal and purity"></select></div>
+          <div class="select"><select id="nt-dir" aria-label="Direction">
+            <option value="above">goes above</option>
+            <option value="below">goes below</option>
+          </select></div>
+          <div class="field" data-focus="nt-price">
+            <span class="affix" aria-hidden="true">$</span>
+            <input id="nt-price" type="text" inputmode="decimal" autocomplete="off" aria-label="Target price" enterkeyhint="done">
+          </div>
+          <div class="select"><select id="nt-unit" aria-label="Unit">
+            <option value="g">per gram</option>
+            <option value="oz">per ounce</option>
+          </select></div>
+        </div>
+        <div class="actions"><button type="button" class="btn ghost" id="nt-add">Add target</button></div>
+
+        <h3 class="sub-h">Big moves</h3>
+        <label class="check"><input type="checkbox" id="nt-moves"> Tell me when gold or silver moves more than</label>
+        <div class="inline-row">
+          <div class="field small" data-focus="nt-moves-pct">
+            <input id="nt-moves-pct" type="text" inputmode="decimal" autocomplete="off" aria-label="Percent move" enterkeyhint="done">
+            <span class="affix" aria-hidden="true">%</span>
+          </div>
+          <span class="hint">since yesterday&rsquo;s close</span>
+        </div>
+
+        <h3 class="sub-h">Daily summary</h3>
+        <label class="check"><input type="checkbox" id="nt-summary"> Send me gold and silver prices every day at</label>
+        <div class="inline-row">
+          <div class="field small time"><input id="nt-summary-time" type="time" aria-label="Summary time"></div>
+          <span class="hint" id="nt-tz"></span>
+        </div>
+
+        <h3 class="sub-h">Connect to GitHub</h3>
+        <p class="setup-status" id="nt-status"></p>
+        <ol class="steps">
+          <li>Copy your setup code. It holds your alerts and this phone&rsquo;s notification address.</li>
+          <li>Open <a id="nt-secrets" rel="noopener" target="_blank">your repository&rsquo;s Actions secrets</a> and add a secret named <code>KARAT_PUSH_CONFIG</code> with the code as its value. If it already exists, edit it and paste the new code.</li>
+          <li>Within about 10 to 20 minutes you get &ldquo;Karat alerts are on&rdquo;. After that, update the secret whenever you change alerts here.</li>
+        </ol>
+        <div class="actions"><button type="button" class="btn" id="nt-copy">Copy setup code</button></div>
+        <textarea class="code" id="nt-code" readonly hidden aria-label="Setup code"></textarea>
+        <p class="form-msg" id="nt-msg" role="status"></p>
+        <div class="actions">
+          <button type="button" class="btn ghost" id="nt-test">Test on this phone</button>
+          <button type="button" class="btn ghost" id="nt-disable">Turn off</button>
+        </div>
+      </div>
+    </div>
+  </details>
 
   <details class="card" id="manual">
     <summary id="manual-summary">Set the gold spot price yourself</summary>
@@ -973,6 +1119,7 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
     renderTable();
     renderManual();
     renderChart();
+    renderNotify();
   }
 
   // Input values are only written when the context changes, never while typing.
@@ -1678,6 +1825,290 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
   });
   renderKey();
 
+  // ---------- Notifications ----------
+  // The phone subscribes with a key pair made on this device. The setup code (subscription,
+  // key pair and alerts) goes into the KARAT_PUSH_CONFIG secret, and the scheduled GitHub
+  // Actions job in .github/workflows/price-alerts.yml sends the notifications.
+  function b64u(bytes) {
+    var s = '';
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function fromB64u(s) {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function makeVapid() {
+    return crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])
+      .then(function (kp) { return crypto.subtle.exportKey('jwk', kp.privateKey); })
+      .then(function (jwk) {
+        var raw = new Uint8Array(65);
+        raw[0] = 4;
+        raw.set(fromB64u(jwk.x), 1);
+        raw.set(fromB64u(jwk.y), 33);
+        return { publicKey: b64u(raw), privateKey: jwk.d };
+      });
+  }
+  function hashText(s) {
+    var h = 5381;
+    for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+    return h.toString(36);
+  }
+
+  var N = (function () {
+    var s = store.get('notify', null) || {};
+    return {
+      on: s.on === true,
+      vapid: s.vapid && s.vapid.publicKey && s.vapid.privateKey ? s.vapid : null,
+      sub: s.sub && s.sub.endpoint ? s.sub : null,
+      targets: validTargets(s.targets),
+      moves: { on: !!(s.moves && s.moves.on), pct: s.moves && Number(s.moves.pct) > 0 ? Number(s.moves.pct) : 2 },
+      summary: { on: !!(s.summary && s.summary.on), time: s.summary && /^\d\d:\d\d$/.test(s.summary.time) ? s.summary.time : '08:00' },
+      copiedHash: s.copiedHash || null,
+      copiedAt: s.copiedAt || null
+    };
+  })();
+  function validTargets(list) {
+    return Array.isArray(list) ? list.filter(function (t) {
+      return t && METALS[t.m] && isPrice(Number(t.p)) && (t.d === 'above' || t.d === 'below') && (t.u === 'g' || t.u === 'oz');
+    }).slice(0, 12) : [];
+  }
+  function saveN() { store.set('notify', N); }
+
+  var ntEl = {
+    unsupported: $('nt-unsupported'), off: $('nt-off'), on: $('nt-on'), targets: $('nt-targets'),
+    purity: $('nt-purity'), dir: $('nt-dir'), price: $('nt-price'), unit: $('nt-unit'),
+    moves: $('nt-moves'), movesPct: $('nt-moves-pct'), summary: $('nt-summary'), summaryTime: $('nt-summary-time'),
+    status: $('nt-status'), code: $('nt-code'), msg: $('nt-msg'), secrets: $('nt-secrets')
+  };
+  var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var standalone = navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && window.isSecureContext && !!(window.crypto && crypto.subtle);
+  var timeZone = (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } })();
+
+  // github.io/<repo>/ -> that repository's "new Actions secret" page.
+  (function () {
+    var m = /^([^.]+)\.github\.io$/i.exec(location.hostname);
+    var repo = location.pathname.split('/')[1];
+    ntEl.secrets.href = m && repo
+      ? 'https://github.com/' + m[1] + '/' + repo + '/settings/secrets/actions/new'
+      : 'https://github.com/';
+  })();
+
+  // Purity choices, e.g. "Gold 21K (875)".
+  ORDER.forEach(function (metal) {
+    METALS[metal].rows.forEach(function (r) {
+      var o = document.createElement('option');
+      o.value = metal + '|' + r[0];
+      o.textContent = METALS[metal].name + ' ' + r[0] + (metal === 'gold' ? ' (' + r[1] + ')' : ' ' + r[1]);
+      ntEl.purity.appendChild(o);
+    });
+  });
+  function purityOf(value) {
+    var parts = value.split('|'), metal = parts[0];
+    var row = METALS[metal].rows.filter(function (r) { return r[0] === parts[1]; })[0];
+    return { m: metal, k: row[0], f: row[2] };
+  }
+  ntEl.unit.value = 'oz'; // the first choice, Gold 24K, reads best per ounce
+  function targetNow(t) {
+    var spot = S.m[t.m].lastLive ? S.m[t.m].lastLive.price : S.m[t.m].price;
+    if (spot == null) return null;
+    var perOz = spot * t.f;
+    return t.u === 'g' ? perOz / OZ_G : perOz;
+  }
+
+  function setupConfig() {
+    return {
+      v: 1,
+      sub: N.sub,
+      vapid: N.vapid,
+      tz: timeZone,
+      subject: location.origin + '/',
+      targets: N.targets.map(function (t) { return { id: t.id, m: t.m, k: t.k, f: t.f, d: t.d, p: t.p, u: t.u }; }),
+      moves: N.moves,
+      summary: N.summary
+    };
+  }
+  function setupCode() { return b64u(new TextEncoder().encode(JSON.stringify(setupConfig()))); }
+  function setupHash() { return hashText(JSON.stringify(setupConfig())); }
+
+  function ntMsg(text) { ntEl.msg.textContent = text || ''; }
+
+  function renderNotify() {
+    var why = '';
+    if (isIOS && !standalone) why = 'On iPhone, notifications work only in the Home Screen app. In Safari, tap Share, then Add to Home Screen, and open Karat from your Home Screen.';
+    else if (!pushOK) why = isIOS ? 'Notifications need iOS 16.4 or later.' : 'This browser can\u2019t receive push notifications.';
+    else if (Notification.permission === 'denied') why = 'Notifications are blocked for Karat. Allow them in Settings, then come back here.';
+    ntEl.unsupported.textContent = why;
+    ntEl.unsupported.hidden = !why;
+    var active = !why && N.on && N.sub;
+    ntEl.off.hidden = !!why || active;
+    ntEl.on.hidden = !active;
+    if (!active) return;
+
+    ntEl.targets.textContent = '';
+    N.targets.forEach(function (t) {
+      var li = document.createElement('li');
+      var text = document.createElement('span');
+      text.textContent = METALS[t.m].name + ' ' + t.k + ' ' + (t.d === 'above' ? 'goes above ' : 'goes below ') + usd(t.p) + (t.u === 'g' ? ' per gram' : ' per ounce');
+      var now = targetNow(t);
+      if (now != null) {
+        var small = document.createElement('small');
+        small.textContent = 'Now ' + usd(now);
+        text.appendChild(small);
+      }
+      var rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'link-btn';
+      rm.textContent = 'Remove';
+      rm.setAttribute('aria-label', 'Remove target: ' + text.firstChild.textContent);
+      rm.addEventListener('click', function () {
+        N.targets = N.targets.filter(function (x) { return x !== t; });
+        saveN();
+        renderNotify();
+      });
+      li.appendChild(text);
+      li.appendChild(rm);
+      ntEl.targets.appendChild(li);
+    });
+    var p = purityOf(ntEl.purity.value);
+    var guide = targetNow({ m: p.m, f: p.f, u: ntEl.unit.value });
+    ntEl.price.placeholder = guide != null ? F2.format(guide).replace(/,/g, '') : '';
+    $('nt-add').disabled = N.targets.length >= 12;
+
+    ntEl.moves.checked = N.moves.on;
+    if (document.activeElement !== ntEl.movesPct) ntEl.movesPct.value = String(N.moves.pct);
+    ntEl.summary.checked = N.summary.on;
+    if (document.activeElement !== ntEl.summaryTime) ntEl.summaryTime.value = N.summary.time;
+    $('nt-tz').textContent = timeZone.replace(/_/g, ' ');
+
+    var current = setupHash();
+    var stale = N.copiedHash && N.copiedHash !== current;
+    ntEl.status.classList.toggle('stale', !N.copiedHash || stale);
+    ntEl.status.textContent = !N.copiedHash
+      ? 'Not connected yet. Follow the three steps below once.'
+      : stale
+        ? 'Your alerts changed since you last copied the setup code. Copy it again and update the KARAT_PUSH_CONFIG secret.'
+        : 'Setup code copied on ' + (when(N.copiedAt) || 'an earlier day') + '. Nothing has changed since.';
+  }
+
+  $('nt-enable').addEventListener('click', function () {
+    ntMsg('');
+    // Ask first, straight from the tap: Safari only shows the prompt for a user gesture.
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') {
+        ntMsg(perm === 'denied' ? 'Notifications are blocked. Allow them for Karat in Settings.' : 'Notifications were not allowed.');
+        renderNotify();
+        throw null;
+      }
+      return Promise.all([navigator.serviceWorker.ready, N.vapid ? N.vapid : makeVapid()]);
+    }).then(function (r) {
+      var reg = r[0];
+      N.vapid = r[1];
+      saveN();
+      return reg.pushManager.getSubscription().then(function (existing) {
+        return existing || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64u(N.vapid.publicKey) });
+      });
+    }).then(function (sub) {
+      N.sub = sub.toJSON();
+      N.on = true;
+      saveN();
+      ntMsg('Notifications are on for this phone. Now connect it to GitHub below.');
+      renderNotify();
+    }).catch(function (e) {
+      if (e === null) return;
+      ntMsg('Could not turn on notifications: ' + (e && e.message ? e.message : 'unknown error') + '.');
+    });
+  });
+
+  $('nt-add').addEventListener('click', function () {
+    var v = parseAmount(ntEl.price.value);
+    if (!isPrice(v)) { ntMsg('Enter a target price above zero.'); ntEl.price.focus(); return; }
+    var p = purityOf(ntEl.purity.value);
+    N.targets.push({ id: Date.now().toString(36), m: p.m, k: p.k, f: p.f, d: ntEl.dir.value, p: Math.round(v * 100) / 100, u: ntEl.unit.value });
+    saveN();
+    ntEl.price.value = '';
+    ntMsg('');
+    renderNotify();
+  });
+  ntEl.purity.addEventListener('change', function () {
+    var p = purityOf(ntEl.purity.value);
+    ntEl.unit.value = p.f === 1 ? 'oz' : 'g';
+    renderNotify();
+  });
+  ntEl.unit.addEventListener('change', renderNotify);
+  ntEl.moves.addEventListener('change', function () { N.moves.on = ntEl.moves.checked; saveN(); renderNotify(); });
+  ntEl.movesPct.addEventListener('input', function () {
+    var v = parseAmount(ntEl.movesPct.value);
+    if (isPrice(v) && v <= 50) { N.moves.pct = v; saveN(); renderNotify(); }
+  });
+  ntEl.summary.addEventListener('change', function () { N.summary.on = ntEl.summary.checked; saveN(); renderNotify(); });
+  ntEl.summaryTime.addEventListener('change', function () {
+    if (/^\d\d:\d\d$/.test(ntEl.summaryTime.value)) { N.summary.time = ntEl.summaryTime.value; saveN(); renderNotify(); }
+  });
+
+  $('nt-copy').addEventListener('click', function () {
+    var code = setupCode();
+    function done(copied) {
+      N.copiedHash = setupHash();
+      N.copiedAt = new Date().toISOString();
+      saveN();
+      renderNotify();
+      ntMsg(copied ? 'Setup code copied. Paste it as the KARAT_PUSH_CONFIG secret.' : 'Select the code below, copy it, and paste it as the KARAT_PUSH_CONFIG secret.');
+    }
+    ntEl.code.value = code;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(function () { ntEl.code.hidden = true; done(true); }, function () {
+        ntEl.code.hidden = false; ntEl.code.select(); done(false);
+      });
+    } else {
+      ntEl.code.hidden = false;
+      ntEl.code.select();
+      done(false);
+    }
+  });
+
+  $('nt-test').addEventListener('click', function () {
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.showNotification('Karat', { body: 'Notifications work on this phone.', icon: 'icons/icon-192.png', tag: 'karat-local-test' });
+    }).then(function () { ntMsg('Test sent. If nothing appeared, check Settings, Notifications, Karat.'); },
+      function (e) { ntMsg('Could not show a notification: ' + (e && e.message ? e.message : 'unknown error') + '.'); });
+  });
+
+  $('nt-disable').addEventListener('click', function () {
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+      .then(function (sub) { return sub && sub.unsubscribe(); })
+      .catch(function () { /* already gone */ })
+      .then(function () {
+        N.on = false;
+        N.sub = null;
+        N.copiedHash = null;
+        saveN();
+        renderNotify();
+        ntMsg('Notifications are off. You can also delete the KARAT_PUSH_CONFIG secret on GitHub.');
+      });
+  });
+
+  // If the phone's subscription changed or vanished, say so: the secret must be updated.
+  function checkSubscription() {
+    if (!N.on || !pushOK || !('serviceWorker' in navigator) || location.protocol === 'file:') return;
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (!sub) {
+        N.on = false;
+        saveN();
+        renderNotify();
+        ntMsg('This phone\u2019s notification subscription was reset. Turn notifications on again, then update the GitHub secret.');
+        return;
+      }
+      var json = sub.toJSON();
+      if (!N.sub || json.endpoint !== N.sub.endpoint) { N.sub = json; saveN(); renderNotify(); }
+    }).catch(function () { /* leave as is */ });
+  }
+  renderNotify();
+
   // ---------- Start ----------
   syncInputs();
   render();
@@ -1694,6 +2125,7 @@ details[open] summary::after { transform: rotate(225deg) translateY(-2px); }
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').catch(function () { /* app still works without it */ });
     });
+    checkSubscription();
   }
 })();
 </script>
